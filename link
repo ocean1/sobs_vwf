@@ -1,0 +1,5 @@
+[objects]
+source/rendering.o
+source/dialog.o
+source/bank0.o
+source/fixes.o
