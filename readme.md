@@ -21,7 +21,7 @@ I tried to squeeze every single cycle I could out of the routine :)
 
 # Fonts and translation
 The fonts have been designed by [Gemini](https://github.com/Gemini-Loboto3),
-he provided the Italian text as well. \o/
+whom provided the Italian text as well. \o/
 
 
 \_ocean
