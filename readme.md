@@ -19,4 +19,9 @@ I tried to squeeze every single cycle I could out of the routine :)
 ![2](screenshots/bgb00016.jpg?raw=True)
 ![3](screenshots/bgb00022.jpg?raw=True)
 
+# Fonts and translation
+The fonts have been designed by [Gemini](https://github.com/Gemini-Loboto3),
+he provided the Italian text as well. \o/
+
+
 \_ocean
