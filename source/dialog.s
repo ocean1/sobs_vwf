@@ -7,64 +7,57 @@
 
 .bank $0E .slot 1
 
-.org $3100 ;free space in dialogs routine's bank
+.org $40D ;$3836C
+.SECTION "incline" OVERWRITE ;fix to increment only one line
+	nop
+.ENDS
 
+.org $D83
+.SECTION "yesno" OVERWRITE ;*fix yes/no*
+	nop
+.ENDS
+
+.org $36C ;$3836C
+.SECTION "JMPdialog" OVERWRITE
+	jp begin	;overwrite the beginning of the original font routine to jump to vwf routine
+.ENDS
+
+.org $3100 ;free space in dialogs routine's bank
 .SECTION "VWFdialog" OVERWRITE
 
 begin:
-	
-	;clear_vwf_var
-	
+	xor a
+	ldh (Tile_Pos),a
+	ldh (Bit_Pos),a
+
+	fill_ram blankspace $3A1
+
 ctlroutine:
 	call wait_irqs             ;waits for interrupts to be done (sync flow)
 	call load_next_char        ;loads next character
 
-	cp $10+1
-	jr c, _ccode
-
-	;cp $10
-	;jp c, ccode_interpreter  ;control codes interpreter (returns to vwfroutine)
-
-	ldh (Charsave), a		;save current character
-	ld a,(TextLine)
-	cp $05-1
-	jr z, _scroller
-	cp $12-1
-	jr z, _scroller				;take care when available lines are finished
-
----
-	ldh a, (Charsave)
-	ld bc, font
-	call TilePosToRamAddress ;hl = ram pos. pointer
-	ld d,h
-	ld e,l                  ;de = font read pointer
-
-	ldh a, (Tile_Pos)
-	ld bc, blankspace
-	call TilePosToRamAddress ;hl = ram pos. pointer
-
-	call jumper_dialog				;call rendering routine
-;back_dialog:
-	jp ctlroutine
-
-_scroller:
-	call $4413
-	clear_vwf_var
-	jr ---
-
-_ccode:
+;----------------------------------- to be removed from final version -----------------------------------------
+;						quick fix to avoid quirks with two-bytes characters
+;-	cp $5e
+;	jr z, +
+;	cp $5f
+;	jr nz, ++
+;+
+;	call load_next_char
+;	call load_next_char
+;	jr -
+;++
+;--------------------------------------------------------------------------------------------------------------
+	
 	or a
 	jr nz, +++                   	;$00 end script interpretation
 	
 	;*fix for Yes/No choose*
 	;prepare pointers
-	ld a, (TileVRAM)
-	call TileToVRAMAddress 	;de = VRAM write pos. pointer
-	ldh a, (Tile_Pos)
-	ld bc, blankspace
-	call TilePosToRamAddress ;hl = ram pos. pointer
+	TileToVRAMAddress TileVRAM	;de = VRAM write pos. pointer
+	TilePosToRamAddress Tile_Pos blankspace ;hl = ram pos. pointer
 
-	call fast_copy_tile
+	CopyFontTileToVRAM
 	
 	ld a,(Chr_Nnl)
 	ld c,a
@@ -74,28 +67,28 @@ _ccode:
 	ld a,(TileVRAM)
 	call CopyNrToVRAMMap    ;copy tile n° in VRAM MAP
 	
-	;clear_vwf_var
 	;*end fix*
 	ret
 +++
+	
 
 	cp $01                  	;$01 new line
 	jr z, +
 	cp $03						;$03 control code
-	jp nz, ccode_interpreter
+	jr nz, _noccode
 
 +	ldh (Charsave),a
 
 	;prepare pointers
-	ld a, (TileVRAM)
-	call TileToVRAMAddress	;de = VRAM write pos. pointer
-	ldh a, (Tile_Pos)
-	ld bc, blankspace
-	call TilePosToRamAddress ;hl = ram pos. pointer
+	TileToVRAMAddress TileVRAM	;de = VRAM write pos. pointer
+	TilePosToRamAddress Tile_Pos blankspace ;hl = ram pos. pointer
 
-	call fast_copy_tile
+	CopyFontTileToVRAM
 
-	clear_vwf_var
+	xor a
+	ldh (Tile_Pos),a
+	ldh (Bit_Pos),a
+	fill_ram blankspace $3A1
 
 	ld a,(Chr_Nnl)
 	ld c,a
@@ -108,113 +101,52 @@ _ccode:
 	ld hl,TileVRAM
 	inc (hl)
 
-	;clear_vwf_var
-
 	ldh a,(Charsave)
-	
-	jp ccode_interpreter
 
+_noccode:
+	cp $10
+	jp c, ccode_interpreter  ;control codes interpreter (returns to vwfroutine)
 
-;-------------------------------------- VAR SYSTEM  ---------------------------------------------
-var_system:
-	push hl
 	ldh (Charsave), a		;save current character
 	ld a,(TextLine)
 	cp $05-1
-	jr z, _scroll
-	cp $12-1
-	jr z, _scroll			;take care when disponibles lines are finished
-
----
-	ldh a, (Charsave)
-	ld bc, font
-	call TilePosToRamAddress ;hl = ram pos. pointer
-	ld d,h
-	ld e,l                  ;de = font read pointer
-
-	ldh a, (Tile_Pos)
-	ld bc, blankspace
-	call TilePosToRamAddress ;hl = ram pos. pointer
-
-	call jumper_dialog				;call rendering routine
-	pop hl
-	ret
-_scroll:	
-	call $4413
-	clear_vwf_var
-	jr ---
-;-------------------------------------- WARP SYSTEM ---------------------------------------------
-warp_system:
-	;clear_vwf_var
-_loop_warp:
-	call load_next_char
-	or a
-	jr z,  _end_warp                  	;$00 end script interpretation
-
-	ldh (Charsave),a
-	ld bc, font
-	call TilePosToRamAddress ;hl = ram pos. pointer
-	ld d,h
-	ld e,l                  ;de = font read pointer
-
-	ldh a, (Tile_Pos)
-	ld bc, blankspace
-	call TilePosToRamAddress ;hl = ram pos. pointer
-
-	call jumper_dialog				;call rendering routine
-	jr _loop_warp
-
-_end_warp:
-	;prepare pointers
-	ld a,(TileVRAM)
-	call TileToVRAMAddress	;de = VRAM write pos. pointer
-	ldh a, (Tile_Pos)
-	ld bc, blankspace
-	call TilePosToRamAddress ;hl = ram pos. pointer
-
-	;call fast_copy_tile
-	CopyFontTileToVRAM
-	
-	ld a,(Chr_Nnl)
-	ld c,a
-	ld a,(TextLine)
-	ld b,a
-	call TileMapOffset      ;calc. tile map offset (hl)
-	ld a,(TileVRAM)
-	call CopyNrToVRAMMap    ;copy tile n° in VRAM MAP
-	;*end fix*
-	
-	clear_vwf_var
-	
-	call $4064
-	pop hl
-	pop bc
-	ret	
-
-;------------------------------------------------------------------------------------------------
-
-
-;.ENDS
-
-;.SECTION "clear var" OVERWRITE
-clear_vars:
-	ld a,($cdad) ;is box open?
-	or a
 	jr z, +
-	pop hl
-	ret
-+
-
-	clear_vwf_var
-	ret
+	cp $12-1
+	jr nz,++				;take care when disponibles lines are finished
++:
+	call $4413
 	
+	xor a
+	ldh (Tile_Pos),a
+	ldh (Bit_Pos),a
+	fill_ram blankspace $3A1
+
+++:
+	TilePosToRamAddress Charsave font
+	ld d,h
+	ld e,l                  ;de = font read pointer
+
+	TilePosToRamAddress Tile_Pos blankspace ;hl = ram write pos. pointer
+
+	call jumper				;call rendering routine
+;backctl:
+	jp ctlroutine
 .ENDS
 
-.SECTION "fix warp" OVERWRITE
-fix_warp_scroll:
-	add b
-	add b
-	add $96
-	jp $5a6c
-	
+
+
+.bank 0 .slot 0
+.org $3B16
+.SECTION "JUMPER" OVERWRITE
+
+jumper:
+	save_bank
+	switch_bank font_bank ;save current bank and change to font bank
+
+	;qui salta alla routine nel banco della font
+	call rendering_dialogs
+back:
+	restore_bank
+;	jp backctl
+	ret
 .ENDS

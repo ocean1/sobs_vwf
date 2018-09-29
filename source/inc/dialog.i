@@ -11,3 +11,18 @@
 .DEFINE TextLine $CDB2   ;line number
 .DEFINE TileVRAM $CDB3   ;Tile N° in VRAM
 .DEFINE Inchrline $CDB4   ;Initial character number on line
+
+.MACRO save_bank
+	ld a,(Current_Bank)
+	ldh (Curbank_save),a
+.ENDM
+
+.MACRO switch_bank
+	ld a, \1
+	ld ($2000), a
+.ENDM
+
+.MACRO restore_bank
+	ldh a,(Curbank_save)
+	ld ($2000), a
+.ENDM

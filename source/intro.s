@@ -1,8 +1,3 @@
-;TODO
-; a completely different routing has been used for intros/menus/etc...
-; rendering routine needs rewriting/adaptation to employ different memory locations
-
-
 .INCDIR "source/inc"
 .INCLUDE "macros.i"
 
@@ -24,7 +19,7 @@ begin_intro:
     ld a,l
     ld (d625),a
     ld a,h
-    ld (d626),a	;salva il puntatore al prossimo carattere
+    ld (d626),a	;save pointer to next char
 
 	ld a,d
 
@@ -46,21 +41,25 @@ begin_intro:
 	jr z,54f3
 	cp a,02			;clear line
 	jp z,5545
-	cp a,03			;pausa formato <$03><$XX>
+	cp a,03			;pause format <$03><$XX>
 	jp z,5577
-	cp a,04			;inizializza schermata?
+	cp a,04			;initialize screen?
 	jp z,558a
-	cp a,05			;mostra freccetta in basso a destra e aspetta per input
+	cp a,05			;choice
 	jp z,55a9
 	cp a,06
 	jp z,54e8
 
-	;prepara per il rendering
-
+	;prepare for rendering
+	
 	ld a,(TileNumber)
 	ld b,a
 	ld a (MinTileNumber)
 	
-	clear_vwf_var
+	xor a
+	ldh (Tile_Pos),a
+	ldh (Bit_Pos),a
+
+	fill_ram blankspace $3A1
 
 .ENDS
