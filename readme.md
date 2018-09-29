@@ -13,5 +13,10 @@ Use wla-dx to assemble and patch the rom (a84fe6ba0235f4fdc78171693c8bf2458976b0
 Should the code look very weird and not straightforward, it was one of my first programming projects, and
 I tried to squeeze every single cycle I could out of the routine :)
 
+# Screenshots
+
+![1](screenshots/bgb00015.jpg?raw=True)
+![2](screenshots/bgb00016.jpg?raw=True)
+![3](screenshots/bgb00022.jpg?raw=True)
 
 \_ocean
